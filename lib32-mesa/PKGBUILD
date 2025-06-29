@@ -1,0 +1,387 @@
+# Maintainer: Laurent Carlier <lordheavym@gmail.com>
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+# Contributor: Andreas Radke <andyrtr@archlinux.org>
+
+pkgbase=lib32-mesa
+pkgname=(
+  lib32-mesa
+  lib32-opencl-mesa
+  lib32-vulkan-intel
+  lib32-vulkan-mesa-layers
+  lib32-vulkan-radeon
+)
+_mesaver=25.1.4
+pkgver=${_mesaver//-/.}.sk1
+pkgrel=1
+epoch=1
+pkgdesc="Open-source OpenGL drivers - 32-bit"
+url="https://www.mesa3d.org/"
+arch=('x86_64')
+license=('MIT AND BSD-3-Clause AND SGI-B-2.0')
+makedepends=(
+  'lib32-clang'
+  'lib32-expat'
+  'lib32-gcc-libs'
+  'lib32-glibc'
+  'lib32-libdrm'
+  'lib32-libelf'
+  'lib32-libglvnd'
+  'lib32-libpng'
+  'lib32-libva'
+  'lib32-libvdpau'
+  'lib32-libx11'
+  'lib32-libxcb'
+  'lib32-libxext'
+  'lib32-libxml2'
+  'lib32-libxrandr'
+  'lib32-libxshmfence'
+  'lib32-libxxf86vm'
+  'lib32-llvm'
+  'lib32-llvm-libs'
+  'lib32-lm_sensors'
+  'lib32-rust-libs'
+  'lib32-spirv-llvm-translator'
+  'lib32-spirv-tools'
+  'lib32-systemd'
+  'lib32-vulkan-icd-loader'
+  'lib32-wayland'
+  'lib32-xcb-util-keysyms'
+  'lib32-zlib'
+  'lib32-zstd'
+
+  # shared between mesa and lib32-mesa
+  'cbindgen'
+  'clang'
+  'cmake'
+  'elfutils'
+  'glslang'
+  'libclc'
+  'meson'
+  'python-mako'
+  'python-packaging'
+  'python-ply'
+  'python-yaml'
+  'rust-bindgen'
+  'wayland-protocols'
+  'xorgproto'
+)
+options=(
+  # GCC 14 LTO causes segfault in LLVM under si_llvm_optimize_module
+  !lto
+
+  # debug packages are a waste of time and space
+  !debug
+)
+source=(
+  https://mesa.freedesktop.org/archive/mesa-${_mesaver}.tar.xz{,.sig}
+  LICENSE
+  0001-STEAMOS-Dynamic-swapchain-override-for-gamescope-lim.patch
+  0003-Xe2-gamescope.patch
+)
+validpgpkeys=(
+  '8703B6700E7EE06D7A39B8D6EDAE37B02CEB490D'  # Emil Velikov <emil.l.velikov@gmail.com>
+  '946D09B5E4C9845E63075FF1D961C596A7203456'  # Andres Gomez <tanty@igalia.com>
+  'E3E8F480C52ADD73B278EE78E1ECBE07D7D70895'  # Juan Antonio Suárez Romero (Igalia, S.L.) <jasuarez@igalia.com>
+  'A5CC9FEC93F2F837CB044912336909B6B25FADFA'  # Juan A. Suarez Romero <jasuarez@igalia.com>
+  '71C4B75620BC75708B4BDB254C95FAAB3EB073EC'  # Dylan Baker <dylan@pnwbakers.com>
+  '57551DE15B968F6341C248F68D8E31AFC32428A6'  # Eric Engestrom <eric@engestrom.ch>
+)
+
+# Rust crates for NVK, used as Meson subprojects
+declare -A _crates=(
+   proc-macro2    1.0.86
+   quote          1.0.33
+   syn            2.0.68
+   unicode-ident  1.0.12
+   paste          1.0.14
+)
+
+for _crate in "${!_crates[@]}"; do
+  source+=($_crate-${_crates[$_crate]}.tar.gz::https://crates.io/api/v1/crates/$_crate/${_crates[$_crate]}/download)
+done
+
+sha256sums=('164872a5e792408aa72fecd52b7be6409724c4ad81700798675a7d801d976704'
+            'SKIP'
+            '7052ba73bb07ea78873a2431ee4e828f4e72bda7d176d07f770fa48373dec537'
+            'a34c312c525717275661e095e393ae31a00104b5d9461ff4de21710caaa069f1'
+            '57d72262fcff8db835cd4a0bee36157097590403f9b4b50caf2d062dc79e7ec4'
+            '5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77'
+            '3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b'
+            '5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae'
+            'de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c'
+            '901fa70d88b9d6c98022e23b4136f9f3e54e4662c3bc1bd1d84a42a9a0f0c1e9')
+b2sums=('f50c5fb0121dc821d604fca9854899c9fef16f407e47a5e426e35f86e90750884bb40aa489305840988ff3e30cdf62d56c2f96f04f456c1606d11695642c6586'
+        'SKIP'
+        '1ecf007b82260710a7bf5048f47dd5d600c168824c02c595af654632326536a6527fbe0738670ee7b921dd85a70425108e0f471ba85a8e1ca47d294ad74b4adb'
+        '40672a16d4fd1d5154412896cc228e76f35d5323fdf5a2ff07bf3c97cf11a49d0f9e286917667d35fdef8d64ef8aa5583b9ca3a49a8e4b199009084c18f45130'
+        '99fd49aff3671eee74605b481676f7f9b314c3fdcd70340cc9ef687ba96179a18631804de3925479ed0170d8e8b6b656f25ef94b579121c4b132517dcb852dc3'
+        '4b89e07f23af8328dbb34fe2b3f1b202f1e6a3885a6269740a23359b41bb4099ac2484565d3b2b0936261689ca525785ac620c766997234fd8d0f409e80e5ea3'
+        '4cede03c08758ccd6bf53a0d0057d7542dfdd0c93d342e89f3b90460be85518a9fd24958d8b1da2b5a09b5ddbee8a4263982194158e171c2bba3e394d88d6dac'
+        '77c4b166f1200e1ee2ab94a5014acd334c1fe4b7d72851d73768d491c56c6779a0882a304c1f30c88732a6168351f0f786b10516ae537cff993892a749175848'
+        '35e8548611c51ee75f4d04926149e5e54870d7073d9b635d550a6fa0f85891f57f326bdbcff3dd8618cf40f8e08cf903ef87d9c034d5921d8b91e1db842cdd7c'
+        '8bc6f68ed286bea617a2cfaf3949bb699d3a0466faeca735314a51596ce950e4ee57eda88154bd562c1728cfaff4cdb5bc1ba701b9d47a9c50d4c4f011bee975')
+
+prepare() {
+  cd mesa-$_mesaver
+
+  # Downgrade Sphinx to version 8.1.3 for compatibility
+  # pacman -Q python-sphinx &>/dev/null && sudo pacman -U --noconfirm https://archive.archlinux.org/packages/p/python-sphinx/python-sphinx-8.1.3-2-any.pkg.tar.zst || true
+
+  # 修复Sphinx 8.2.3兼容性问题：禁用bootstrap扩展
+  if [ -f docs/conf.py ]; then
+    # 备份原始文件
+    cp docs/conf.py docs/conf.py.orig
+    # 注释掉bootstrap扩展
+    sed -i "s/'bootstrap',\?//g" docs/conf.py
+    # 确保没有多余的逗号
+    sed -i "s/,,/,/g" docs/conf.py
+    sed -i "s/,]/]/g" docs/conf.py
+    echo "Bootstrap extension disabled to fix Sphinx 8.2.3 compatibility issue."
+  fi
+
+  local src
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    [[ $src = *.patch ]] || continue
+    echo "Applying patch $src..."
+    patch -Np1 < "../$src"
+  done
+
+  # Include package release in version string so Chromium invalidates
+  # its GPU cache; otherwise it can cause pages to render incorrectly.
+  # https://bugs.launchpad.net/ubuntu/+source/chromium-browser/+bug/2020604
+  echo "$pkgver-$epoch.$pkgrel" >VERSION
+}
+
+build() {
+  local meson_options=(
+    --cross-file lib32
+    -D android-libbacktrace=disabled
+    -D b_ndebug=true
+    -D gallium-drivers=radeonsi,i915,iris
+    -D gallium-extra-hud=true
+    -D gallium-nine=false
+    -D gallium-rusticl=true
+    -D gallium-xa=disabled
+    -D gbm=enabled
+    -D gles1=disabled
+    -D gles2=enabled
+    -D glvnd=enabled
+    -D glx=dri
+    -D intel-clc=enabled
+    -D intel-rt=disabled
+    -D libunwind=disabled
+    -D microsoft-clc=disabled
+    -D platforms=x11,wayland
+    -D valgrind=disabled
+    -D video-codecs=all
+    -D vulkan-drivers=amd,intel,intel_hasvk
+    -D vulkan-layers=device-select,intel-nullhw,overlay
+    -D vulkan-beta=true
+  )
+
+  # Build only minimal debug info to reduce size
+  # CFLAGS+=' -g1'
+  # CXXFLAGS+=' -g1'
+
+  # Inject subproject packages
+  export MESON_PACKAGE_CACHE_DIR="$srcdir"
+
+  export BINDGEN_EXTRA_CLANG_ARGS="-m32"
+
+  arch-meson mesa-$_mesaver build "${meson_options[@]}"
+  meson configure build --no-pager # Print config
+  meson compile -C build
+
+  # fake installation to be seperated into packages
+  # outside of fakeroot but mesa doesn't need to chown/mod
+  meson install -C build --destdir "$srcdir/fakeinstall"
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv -v "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_lib32-mesa() {
+  depends=(
+    lib32-expat
+    lib32-gcc-libs
+    lib32-glibc
+    lib32-libdrm
+    lib32-libelf
+    lib32-libglvnd
+    lib32-libx11
+    lib32-libxcb
+    lib32-libxext
+    lib32-libxshmfence
+    lib32-libxxf86vm
+    lib32-llvm-libs
+    lib32-lm_sensors
+    lib32-spirv-tools
+    lib32-wayland
+    lib32-zlib
+    lib32-zstd
+
+    mesa
+  )
+  optdepends=("opengl-man-pages: for the OpenGL API man pages")
+  provides=(
+    "lib32-libva-mesa-driver=$epoch:$pkgver-$pkgrel"
+    "lib32-mesa-libgl=$epoch:$pkgver-$pkgrel"
+    "lib32-mesa-vdpau=$epoch:$pkgver-$pkgrel"
+    lib32-libva-driver
+    lib32-opengl-driver
+    lib32-vdpau-driver
+  )
+  conflicts=(
+    'lib32-libva-mesa-driver<1:24.2.7-1'
+    'lib32-mesa-libgl<17.0.1-2'
+    'lib32-mesa-vdpau<1:24.2.7-1'
+  )
+  replaces=(
+    'lib32-libva-mesa-driver<1:24.2.7-1'
+    'lib32-mesa-libgl<17.0.1-2'
+    'lib32-mesa-vdpau<1:24.2.7-1'
+  )
+
+  meson install -C build --destdir "$pkgdir"
+
+  (
+    local libdir=usr/lib32 icddir=usr/share/vulkan/icd.d
+
+    cd "$pkgdir"
+
+    _pick clrust $libdir/libRusticlOpenCL*
+
+    _pick vkintel $icddir/intel_*.json
+    _pick vkintel $libdir/libvulkan_intel*.so
+
+    _pick vklayer $libdir/libVkLayer_*.so
+
+    _pick vkradeon $icddir/radeon_icd*.json
+    _pick vkradeon $libdir/libvulkan_radeon.so
+
+    rm -rv etc usr/{bin,include,share}
+
+    # indirect rendering
+    ln -sr $libdir/libGLX_{mesa,indirect}.so.0
+  )
+
+  install -Dm644 mesa-$_mesaver/docs/license.rst -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+package_lib32-opencl-mesa() {
+  pkgdesc="Open-source OpenCL drivers - RustICL variant - 32-bit"
+  depends=(
+    lib32-clang
+    lib32-expat
+    lib32-gcc-libs
+    lib32-glibc
+    lib32-libdrm
+    lib32-libelf
+    lib32-llvm-libs
+    lib32-spirv-llvm-translator
+    lib32-spirv-tools
+    lib32-zlib
+    lib32-zstd
+
+    opencl-mesa
+  )
+  optdepends=("opencl-headers: headers necessary for OpenCL development")
+  provides=(lib32-opencl-driver)
+  replaces=("lib32-opencl-mesa<=23.1.4-1")
+  conflicts=(lib32-opencl-mesa)
+
+  mv clrust/* "$pkgdir"
+
+  install -Dm644 mesa-$_mesaver/docs/license.rst -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+package_lib32-vulkan-intel() {
+  pkgdesc="Open-source Vulkan driver for Intel GPUs - 32-bit"
+  depends=(
+    lib32-expat
+    lib32-gcc-libs
+    lib32-glibc
+    lib32-libdrm
+    lib32-libx11
+    lib32-libxcb
+    lib32-libxshmfence
+    lib32-spirv-tools
+    lib32-systemd
+    lib32-vulkan-icd-loader
+    lib32-wayland
+    lib32-xcb-util-keysyms
+    lib32-zlib
+    lib32-zstd
+
+    vulkan-intel
+  )
+  optdepends=("lib32-vulkan-mesa-layers: additional vulkan layers")
+  provides=(lib32-vulkan-driver)
+
+  mv vkintel/* "$pkgdir"
+
+  install -Dm644 mesa-$_mesaver/docs/license.rst -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+package_lib32-vulkan-mesa-layers() {
+  pkgdesc="Mesa's Vulkan layers - 32-bit"
+  depends=(
+    lib32-gcc-libs
+    lib32-glibc
+    lib32-libdrm
+    lib32-libpng
+    lib32-libxcb
+    lib32-wayland
+
+    vulkan-mesa-layers
+  )
+  conflicts=(lib32-vulkan-mesa-layer)
+  replaces=(lib32-vulkan-mesa-layer)
+
+  mv vklayer/* "$pkgdir"
+
+  install -Dm644 mesa-$_mesaver/docs/license.rst -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+package_lib32-vulkan-radeon() {
+  pkgdesc="Open-source Vulkan driver for AMD GPUs - 32-bit"
+  depends=(
+    lib32-expat
+    lib32-gcc-libs
+    lib32-glibc
+    lib32-libdrm
+    lib32-libelf
+    lib32-libx11
+    lib32-libxcb
+    lib32-libxshmfence
+    lib32-llvm-libs
+    lib32-spirv-tools
+    lib32-systemd
+    lib32-vulkan-icd-loader
+    lib32-wayland
+    lib32-xcb-util-keysyms
+    lib32-zlib
+    lib32-zstd
+
+    vulkan-radeon
+  )
+  optdepends=("lib32-vulkan-mesa-layers: additional vulkan layers")
+  provides=(lib32-vulkan-driver)
+
+  mv vkradeon/* "$pkgdir"
+
+  install -Dm644 mesa-$_mesaver/docs/license.rst -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+# vim:set sw=2 sts=-1 et:
