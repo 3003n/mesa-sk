@@ -1,5 +1,8 @@
 name: Build Sk-ChimeraOS Mesa
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
