@@ -201,7 +201,7 @@ build() {
 
   # Build only minimal debug info to reduce size
   CFLAGS+=" -g1"
-  CXXFLAGS+=" -g1"
+  CXXFLAGS+=" -g1 -Wno-error=format"
 
   # Inject subproject packages
   export MESON_PACKAGE_CACHE_DIR="$srcdir"
